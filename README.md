@@ -1,110 +1,95 @@
-pyNetAnalyzer
+# pyNetAnalyzer
 
-An AI-Powered Network Diagnostic Toolkit for macOS and Linux.
+> A powerful and lightweight Python tool for network diagnostics and analysis. `pyNetAnalyzer` provides a simple CLI interface to run a suite of tests and gather critical network information.
 
-pyNetAnalyzer is a command-line toolkit designed for network technicians and enthusiasts to run a comprehensive suite of network diagnostics, log the results to a local database, and perform intelligent analysis using local Large Language Models (LLMs) via Ollama.
+## Features
 
-Core Features
+* **Automated Diagnostics:** Run a comprehensive suite of network tests with a single command.
+* **Clear Results:** Get easy-to-read output for latency, DNS, and gateway checks.
+* **Lightweight & Fast:** Built with standard Python libraries for maximum compatibility and speed.
+* **Extensible:** Designed to be easily extended with new diagnostic modules.
 
-Comprehensive Testing Suite: Runs essential network tools like ping, nmap (ARP scan), mtr, tshark (for loop detection), dig, and more.
+## Getting Started
 
-Structured Data Storage: All test results are parsed and saved as structured JSON in a local SQLite database (scans.db), separating data from presentation.
+Follow these instructions to get a copy of the project up and running on your local machine.
 
-Cross-Platform Compatibility: Works on Debian-based Linux (like Raspberry Pi OS) and macOS, with platform-specific commands handled automatically.
+### Prerequisites
 
-Human-Readable Reports: Export raw results from multiple tests into a clean, consolidated text file perfect for reports or sharing.
+* Python 3.9+
+* `pip` for installing packages
 
-AI-Powered Analysis: Use the analyzer script to perform benchmarks across multiple local LLMs (Gemma, GPT-OSS, Phi, etc.) to get an AI-driven summary of network health.
+### Installation
 
-Modular Architecture: The project is split into two focused scripts: one for testing, one for analysis.
+1.  **Clone the repository:**
+    ```bash
+    git clone [https://github.com/snagaduck/pyNetAnalyzer.git](https://github.com/snagaduck/pyNetAnalyzer.git)
+    ```
 
-Project Structure
+2.  **Navigate to the project directory:**
+    ```bash
+    cd pyNetAnalyzer
+    ```
 
-This toolkit consists of two main scripts:
+3.  **Install dependencies:**
+    The project has minimal dependencies, but you can install them from `requirements.txt`.
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-network-tester.py: The data-gathering engine. Its job is to run the network tests, parse the output into JSON, and save everything to the scans.db database. It also handles exporting human-readable reports.
+## Usage
 
-network-analyzer.py: The AI analysis and benchmarking engine. It reads the structured data from the database and uses Ollama to perform analysis with various large language models.
+The primary way to use `pyNetAnalyzer` is through its command-line interface.
 
-Prerequisites
+**Basic Example:**
+To run the default diagnostic suite, execute the main script with `sudo` permissions:
 
-Python 3.8+
+```bash
+sudo python3 pyNetAnalyzer.py
+```
 
-Ollama installed and running.
+**Running with Arguments:**
+You can specify arguments to customize the tests.
 
-On macOS: Homebrew package manager.
+```bash
+# Run tests for a specific customer and enable verbose output
+sudo python3 pyNetAnalyzer.py --name "ExampleCorp" --verbose
+```
 
-On Linux: apt package manager.
+### Command-Line Arguments
 
-Installation
+| Argument    | Type   | Default | Description                               |
+| :---------- | :----- | :------ | :---------------------------------------- |
+| `--name`    | string | `None`  | A name/identifier for the test run.       |
+| `--export`  | flag   | `False` | Export test results to a `.log` file.     |
+| `--verbose` | flag   | `False` | Enable detailed, step-by-step output.   |
 
-Clone the repository:
+<details>
+<summary>👉 Click to view sample verbose output</summary>
 
-git clone [https://github.com/snagaduck/pyNetAnalyzer.git](https://github.com/snagaduck/pyNetAnalyzer.git)
-cd pyNetAnalyzer
+```text
+[INFO] Starting pyNetAnalyzer Suite...
+[INFO] Pinging default gateway 192.168.1.1...
+[SUCCESS] Gateway is reachable. Latency: 1.5ms.
+[INFO] Pinging primary DNS server 8.8.8.8...
+[SUCCESS] DNS server is reachable. Latency: 9.2ms.
+[INFO] Performing external IP lookup...
+[SUCCESS] External IP: 123.45.67.89
+[INFO] Test suite completed successfully.
+```
 
+</details>
 
-Install Network Tools:
+## 🤝 Contributing
 
-On macOS (using Homebrew):
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-brew install nmap mtr speedtest-cli wireshark bind
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
 
+## 📜 License
 
-On Debian/Ubuntu Linux:
-
-sudo apt update && sudo apt install nmap mtr speedtest-cli tshark hping3 dnsutils arp-scan -y
-
-
-Download AI Models with Ollama:
-Pull the models you want to use for analysis. The analyzer script is pre-configured to benchmark several popular models.
-
-ollama pull gemma2:9b
-ollama pull gemma3:12b
-ollama pull gpt-oss:20b
-ollama pull phi3
-
-
-Usage Guide
-
-1. Run Diagnostic Tests (network-tester.py)
-
-The first step is always to run tests to gather data. On macOS, many tests require root privileges.
-
-Run the core diagnostic suite and tag it with a customer name:
-This will run a battery of tests and automatically export a report to your Downloads folder.
-
-sudo ./network-tester.py run-first --name "Customer Site A"
-
-
-Run an individual scan:
-You can also run single tests and tag them.
-
-sudo ./network-tester.py nmap 192.168.1.0/24 --name "Local Network Scan"
-
-
-View your scan history:
-This command does not require sudo.
-
-./network-tester.py history
-
-
-Manually export results:
-Combine the results from specific scan IDs into a single text file.
-
-./network-tester.py export 45,46,47,48,49 client-report.txt
-
-
-2. Analyze Results (network-analyzer.py)
-
-After gathering data, use the analyzer to get AI-powered insights.
-
-Run a benchmark across all configured models:
-This will take the results from the specified scan IDs and have each LLM provide its analysis and performance metrics.
-
-./network-analyzer.py benchmark 45,46,47,48,49 "Summarize the health of this network and point out any potential issues."
-
-
-License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
+Distributed under the MIT License. See `LICENSE.md` for more information.
+```
