@@ -37,6 +37,79 @@ def run_command(command, text_input=None):
     except Exception as e:
         return f"An unexpected error occurred: {e}", ""
 
+# --- Helper & Formatting Functions ---
+
+def show_tutorial():
+    """Prints a user-friendly tutorial for the analyzer script."""
+    tutorial_text = """
+=================================================
+Welcome to the Network Analysis Tool!
+=================================================
+This script reads data from 'scans.db' and uses AI to perform analysis.
+It's the second step in the pyNetAnalyzer workflow.
+-------------------------------------------------
+Workflow
+-------------------------------------------------
+1. Benchmark Models (Optional but Recommended):
+   Run this first to see how your installed models perform. It automatically
+   uses the last 5 scans from the database.
+   ./network-analyzer.py benchmark
+
+2. Run a Focused Analysis:
+   Choose the best model from your benchmark and run a detailed analysis
+   on specific scan IDs.
+   ./network-analyzer.py analyze 42,43,44 --model gemma2:9b "Are there any security risks?"
+
+3. Review History and View Scans:
+   ./network-analyzer.py history
+   ./network-analyzer.py view 42
+"""
+    print(tutorial_text)
+    sys.exit(0)
+
+def format_json_for_display(tool, results_dict):
+    """
+    Takes a tool name and a results dictionary and returns a formatted human-readable string.
+    This is used by the 'view' command.
+    """
+    lines = []
+    if tool == 'net-config':
+        lines.append("--- Global Information ---")
+        for key in ['public_wan_ipv4', 'public_wan_ipv6', 'default_gateway', 'dns_servers']:
+            if key in results_dict:
+                lines.append(f"  {key.replace('_', ' ').title():<20}: {results_dict[key]}")
+        lines.append("\n--- Key Network Interfaces ---")
+        for iface, details in results_dict.get('interfaces', {}).items():
+            lines.append(f"\n  Interface: {iface}")
+            lines.append(f"    IPv4 Address: {details.get('ipv4', 'N/A')}")
+            lines.append(f"    IPv6 Address: {details.get('ipv6', 'N/A')}")
+            lines.append(f"    MAC Address : {details.get('mac', 'N/A')}")
+    elif tool == 'ping':
+        lines.append(f"  Target: {results_dict.get('target')}")
+        lines.append(f"  Packet Loss: {results_dict.get('packet_loss', 'N/A')}")
+        lines.append(f"  Round-trip avg: {results_dict.get('rtt_avg', 'N/A')}")
+        lines.append("\n--- Raw Output ---\n" + results_dict.get('raw_output', ''))
+    elif tool == 'mtr':
+        lines.append("HOST: {:<40} Loss%   Snt   Last   Avg  Best  Wrst StDev".format(results_dict.get('source_host', '')))
+        for i, hop in enumerate(results_dict.get('hops', []), 1):
+            lines.append("{:>3}.|-- {:<40} {:>5} {:>5} {:>6} {:>5} {:>5} {:>5} {:>5}".format(
+                i, hop.get('host', '???'), hop.get('loss', 'N/A'), hop.get('snt', 'N/A'),
+                hop.get('last', 'N/A'), hop.get('avg', 'N/A'), hop.get('best', 'N/A'),
+                hop.get('wrst', 'N/A'), hop.get('stdev', 'N/A')
+            ))
+    elif tool == 'nmap':
+        lines.append(f"Scan Target: {results_dict.get('target')}")
+        lines.append(f"Hosts Found: {len(results_dict.get('hosts', []))}")
+        for host in results_dict.get('hosts', []):
+            lines.append(f"  - Host: {host.get('ip')} ({host.get('hostname', 'N/A')}) is up")
+    elif tool == 'loop-detect':
+        lines.append(results_dict.get('summary', 'No summary available.'))
+    else:
+        # Default fallback for any other tools is to pretty-print the JSON
+        lines.append(json.dumps(results_dict, indent=4))
+        
+    return "\n".join(lines)
+
 # --- Database Functions ---
 
 def get_scan_result(scan_id):
@@ -104,7 +177,7 @@ def get_installed_models():
     
     lines = stdout.strip().split('\n')
     # The first line is the header, so we skip it
-    models = [line.split()[0] for line in lines[1:]]
+    models = [line.split()[0] for line in lines[1:] if line]
     return models
 
 def parse_ollama_stats(stderr_output):
@@ -172,13 +245,11 @@ def run_benchmark():
     """
     print("--- Starting AI Analysis Benchmark ---")
     
-    # 1. Get installed models
     installed_models = get_installed_models()
     if not installed_models:
         print("No Ollama models found. Please pull a model first (e.g., 'ollama pull gemma2:9b').")
         return
 
-    # 2. Get last 5 scan IDs
     scan_ids = get_last_scan_ids(5)
     if not scan_ids:
         print("No scans found in the database. Please run 'network-tester.py' first.")
@@ -186,7 +257,6 @@ def run_benchmark():
         
     print(f"Found {len(installed_models)} models to test against the last {len(scan_ids)} scans (IDs: {', '.join(map(str, scan_ids))}).")
     
-    # 3. Loop through and run benchmark
     fixed_prompt = "Can you determine any issues within this network?"
     for model in installed_models:
         print("\n" + "="*50)
@@ -210,14 +280,13 @@ def print_model_help_and_exit():
     """
     Runs 'ollama list' and prints a helpful error message, then exits.
     """
-    print("Error: --model flag is required for the 'analyze' command.")
+    print("\nError: --model flag is required for the 'analyze' command.")
     print("-" * 20)
     print("Please choose from one of your installed models below:")
     
     installed_models = get_installed_models()
     if installed_models:
         print("\nAvailable Models:")
-        # Re-run ollama list just to get the nicely formatted table
         list_output, _ = run_command(['ollama', 'list'])
         print(list_output)
     else:
@@ -231,6 +300,9 @@ def print_model_help_and_exit():
 
 
 def main():
+    if len(sys.argv) == 1:
+        show_tutorial()
+        
     parser = argparse.ArgumentParser(
         description="Network Analysis Tool with AI benchmarking.",
         formatter_class=argparse.RawTextHelpFormatter
@@ -240,13 +312,11 @@ def main():
     history_parser = subparsers.add_parser('history', help='Show recent scan history')
     history_parser.add_argument('--limit', type=int, default=10, help='Number of entries to show')
     
-    view_parser = subparsers.add_parser('view', help='View the full results of a specific scan')
-    view_parser.add_argument('id', type=int, help='The ID of the scan to view (outputs raw JSON)')
+    view_parser = subparsers.add_parser('view', help='View the formatted results of a specific scan')
+    view_parser.add_argument('id', type=int, help='The ID of the scan to view')
 
-    # New benchmark command - no arguments needed
     subparsers.add_parser('benchmark', help='Benchmark all local models against the last 5 scans.')
 
-    # New analyze command - requires --model
     analyze_parser = subparsers.add_parser('analyze', help='Run a focused analysis with a specific model.')
     analyze_parser.add_argument('ids', help='Comma-separated list of scan IDs (e.g., 34,35,36)')
     analyze_parser.add_argument('prompt', help='The question to ask the model.')
@@ -255,6 +325,8 @@ def main():
     args = parser.parse_args()
     
     if not args.command:
+        # This case is now handled by the check at the top of main()
+        # but is kept as a fallback.
         parser.print_help()
         sys.exit(0)
 
@@ -263,7 +335,16 @@ def main():
     elif args.command == 'view':
         scan_data = get_scan_result(args.id)
         if scan_data:
-            print(scan_data[2]) 
+            tool, target, json_results, customer_name = scan_data
+            try:
+                results_dict = json.loads(json_results)
+                name_str = f" | Name: {customer_name}" if customer_name else ""
+                print(f"--- Viewing Scan ID: {args.id} (Tool: {tool}{name_str}) ---")
+                human_readable_output = format_json_for_display(tool, results_dict)
+                print(human_readable_output)
+            except json.JSONDecodeError:
+                print("Error: Could not parse the stored JSON data. Displaying raw data:")
+                print(json_results)
         else:
             print(f"Error: No scan found with ID {args.id}")
     elif args.command == 'benchmark':
@@ -284,3 +365,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
