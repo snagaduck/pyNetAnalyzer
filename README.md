@@ -1,17 +1,18 @@
 # pyNetAnalyzer
 
-> A powerful and lightweight Python tool for network diagnostics and analysis. `pyNetAnalyzer` provides a simple CLI interface to run a suite of tests and gather critical network information.
+> An advanced, command-line network diagnostic tool for Python. `pyNetAnalyzer` runs a variety of tests, logs results to a local database, and allows for querying past performance data.
 
 ## Features
 
-* **Automated Diagnostics:** Run a comprehensive suite of network tests with a single command.
-* **Clear Results:** Get easy-to-read output for latency, DNS, and gateway checks.
-* **Lightweight & Fast:** Built with standard Python libraries for maximum compatibility and speed.
-* **Extensible:** Designed to be easily extended with new diagnostic modules.
+* **Multi-Faceted Testing:** Run tests for ping, latency, jitter, packet loss, and traceroute.
+* **Persistent Storage:** Automatically saves all test results to a local SQLite database for historical analysis.
+* **Flexible Output:** View results in a human-readable format or export as JSON for use in other applications.
+* **Query Past Results:** Easily retrieve and display the results of any previous test run using its unique ID.
+* **Customizable Test Suites:** Run all tests at once or specify individual tests to perform.
 
 ## Getting Started
 
-Follow these instructions to get a copy of the project up and running on your local machine.
+Follow these instructions to get the project up and running.
 
 ### Prerequisites
 
@@ -31,65 +32,70 @@ Follow these instructions to get a copy of the project up and running on your lo
     ```
 
 3.  **Install dependencies:**
-    The project has minimal dependencies, but you can install them from `requirements.txt`.
     ```bash
     pip install -r requirements.txt
     ```
+4.  **Initialize the Database:**
+    The first time you run the script, it will automatically create a `network_tests.db` file to store results.
 
 ## Usage
 
-The primary way to use `pyNetAnalyzer` is through its command-line interface.
+`pyNetAnalyzer` now has a more powerful set of commands to run tests and manage results.
 
-**Basic Example:**
-To run the default diagnostic suite, execute the main script with `sudo` permissions:
+**Basic Example (Run all tests):**
+Execute the main script with `sudo` permissions to run the full diagnostic suite.
 
 ```bash
 sudo python3 pyNetAnalyzer.py
 ```
 
-**Running with Arguments:**
-You can specify arguments to customize the tests.
+**Running Specific Tests:**
+You can specify one or more tests to run.
 
 ```bash
-# Run tests for a specific customer and enable verbose output
-sudo python3 pyNetAnalyzer.py --name "ExampleCorp" --verbose
+# Run only the ping and traceroute tests
+sudo python3 pyNetAnalyzer.py --test ping traceroute
+```
+
+**Querying Past Results:**
+Retrieve a previous test run from the database by its ID.
+
+```bash
+# Get the results from the test run with ID 11
+python3 pyNetAnalyzer.py --query 11
+```
+
+**JSON Output:**
+Export results in JSON format. This is useful for parsing with other scripts.
+
+```bash
+# Run all tests and output the results as JSON
+sudo python3 pyNetAnalyzer.py --format json
 ```
 
 ### Command-Line Arguments
 
-| Argument    | Type   | Default | Description                               |
-| :---------- | :----- | :------ | :---------------------------------------- |
-| `--name`    | string | `None`  | A name/identifier for the test run.       |
-| `--export`  | flag   | `False` | Export test results to a `.log` file.     |
-| `--verbose` | flag   | `False` | Enable detailed, step-by-step output.   |
+| Argument | Type | Description |
+| :--- | :--- | :--- |
+| `--test` | list | Specify one or more tests to run (e.g., `ping`, `jitter`, `traceroute`). Defaults to all tests. |
+| `--name` | string | Attach a customer name or identifier to the test run for easier tracking. |
+| `--export` | flag | **(Deprecated)** Use `--format json` and redirect output instead (e.g., `... > results.json`). |
+| `--verbose` | flag | Enable detailed, step-by-step output during the test execution. |
+| `--query` | integer | Retrieve and display a specific test result from the database by its ID. |
+| `--format` | string | Set the output format. Options are `text` (default) or `json`. |
+| `--list-tests`| flag | Display a list of all available tests you can run. |
 
-<details>
-<summary>👉 Click to view sample verbose output</summary>
+## Contributing
 
-```text
-[INFO] Starting pyNetAnalyzer Suite...
-[INFO] Pinging default gateway 192.168.1.1...
-[SUCCESS] Gateway is reachable. Latency: 1.5ms.
-[INFO] Pinging primary DNS server 8.8.8.8...
-[SUCCESS] DNS server is reachable. Latency: 9.2ms.
-[INFO] Performing external IP lookup...
-[SUCCESS] External IP: 123.45.67.89
-[INFO] Test suite completed successfully.
-```
-
-</details>
-
-## 🤝 Contributing
-
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are welcome! Please follow the standard fork and pull request workflow.
 
 1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+2.  Create your Feature Branch (`git checkout -b feature/NewTest`)
+3.  Commit your Changes (`git commit -m 'Add NewTest'`)
+4.  Push to the Branch (`git push origin feature/NewTest`)
 5.  Open a Pull Request
 
-## 📜 License
+## License
 
 Distributed under the MIT License. See `LICENSE.md` for more information.
-```
+
