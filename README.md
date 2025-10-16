@@ -23,7 +23,7 @@ Follow these instructions to get the project up and running.
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/snagaduck/pyNetAnalyzer.git](https://github.com/snagaduck/pyNetAnalyzer.git)
+    git clone https://github.com/snagaduck/pyNetAnalyzer.git
     ```
 
 2.  **Navigate to the project directory:**
